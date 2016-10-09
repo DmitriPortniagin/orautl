@@ -5,4 +5,3 @@ where s.saddr = k.kgllkuse and k.kglnaobj = upper ('ubrr_abs_set_context') and s
 select 'alter system disconnect session ''' || sid || ',' || serial# || ''' immediate;'
 from v$session, x$kgllk
 where saddr = kgllkuse and kglnaobj = upper ('ubrr_abs_set_context');
-

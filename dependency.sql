@@ -15,4 +15,4 @@ SELECT owner,
                                    AND object_name = 'UBRR_TAA_LIMITS_CALC'
                                    AND object_type = 'PACKAGE BODY'))
 and object_type not in ( 'SYNONYM', 'VIEW')
-order by 1,2,3
+order by 1,2,3;

@@ -1,6 +1,4 @@
 SELECT * FROM v$DATABASE
-
-
   SELECT * FROM  table(DBMS_WORKLOAD_REPOSITORY.ash_report_html(
                            l_dbid          => 871185038,
                            l_inst_num      => 1,
