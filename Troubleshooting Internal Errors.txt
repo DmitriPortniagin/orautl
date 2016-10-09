@@ -1,0 +1,80 @@
+
+ORA-600 [6033]. This error is reported with no additional arguments, as shown in the following alert.log file excerpt: 
+Errors in file/u01/oracle/admin/PROD/
+bdump/prod_ora_2367574.trc:
+ORA-600: internal error code, arguments: 
+[6033], [], [], [], [], [], [], []
+
+
+ 
+ The ORA-600 [6033] error often indicates an index corruption. To identify the affected index, you’ll need to look at the trace file
+ whose name is provided in the alert.log file, just above the error message. In this alert.log excerpt, the trace file you need to look at 
+ is called prod_ora_2367574.trc and is located in /u01/oracle/admin/PROD/bdump.
+
+There are two possible ways to identify the table on which the affected index is built: 
+
+Look for the SQL statement that was executing at the time of the error. This statement should appear at the top of the trace file, under 
+the heading “Current SQL Statement.” The affected index will belong to one of the tables accessed by that statement.
+
+
+Search within the trace file for the words Plan Table. This search will return the tables and indexes the Oracle Database optimizer is 
+using to access the data that will satisfy the query being executed. For example, the query using the plan in Listing 1 is accessing 
+the testtab1, testtab2, and testtab3 tables and the XC179S1 and XC179PO indexes.
+
+ Code Listing 1: Query plan accessing three tables and two indexes 
+
+-------------------------------------------------------------------------------
+|Id |Operation                  |Name            |Rows  |Bytes |Cost |Time    |
+-------------------------------------------------------------------------------
+|0  |SELECT STATEMENT           |                |      |      |883K |        |
+|1  | WINDOW NOSORT             |                |2506K | 318M |883K |04:31:56|
+|2  |  SORT GROUP BY            |                |2506K | 318M |883K |04:31:56|
+|3  |   HASH JOIN RIGHT OUTER   |                |2506K | 318M |837K |03:20:05|
+|4  |    VIEW                   |index$_join$_006| 8777 | 257K |  35 |00:00:01|
+|5  |     HASH JOIN             |                |      |      |     |        |
+|6  |      INDEX FAST FULL SCAN |XC179S1         | 8777 | 257K |  18 |00:00:01|
+|7  |      INDEX FAST FULL SCAN |XC179P0         | 8777 | 257K |  25 |00:00:01|
+|8  |    VIEW                   |                |2506K | 245M |837K |03:20:04|
+|9  |     HASH JOIN OUTER       |                |2506K | 296M |837K |03:20:04|
+|10 |      HASH JOIN            |                |2506K | 184M |454K |02:49:32|
+|11 |       TABLE ACCESS FULL   |TESTTAB1        |2484K | 102M |361K |01:26:13|
+|12 |       TABLE ACCESS FULL   |TESTTAB2        |  21M | 688M | 49K |00:12:37|
+|13 |      TABLE ACCESS FULL    |TESTTAB3        |  94M |4326M |146K |00:35:51|
+ 
+
+For each of the tables used by the SQL statement that was executing at the time of the error, execute the following statement: 
+SQL>analyze table <tablename> validate 
+structure cascade;
+ 
+
+This will check to ensure that every value in the index is also in the table, and vice versa. If it finds a mismatch, it will report 
+ORA-1499 table/Index Cross Reference 
+Failure - see trace file
+ 
+
+The trace file will be in the location indicated by the user_dump_dest or diagnostic_dest initialization parameter and will contain 
+information similar to row not found in index 
+
+tsn: 8 
+rdba: 0x04d01348
+ 
+
+You can then find the index with by using the query in Listing 2. Replace the &rdba and &tsn values in Listing 2 with the appropriate values. 
+For this example, the &rdba value is the rdba from the trace file with the 0x portion removed and &tsn is the tablespace number (tsn) from the trace file.
+(&rdba in this case would be 04d01348, and &tsn would be 8.)
+
+ Code Listing 2: Find the index 
+SELECT owner, segment_name, segment_type, partition_name
+FROM DBA_SEGMENTS
+WHERE header_file = (SELECT file# 
+                      FROM v$datafile 
+                      WHERE rfile# = dbms_utility.data_block_address_file(to_
+number('&rdba','XXXXXXXX'))
+                        AND ts#= &tsn)
+  AND header_block = dbms_utility.data_block_address_block(to_
+number('&rdba','XXXXXXXX'));
+
+ 
+
+Once you have identified the index, drop and re-create it. It is important to drop and re-create the index rather than rebuilding 
+it online, because only re-creating it will reinitialize the values in the index.
