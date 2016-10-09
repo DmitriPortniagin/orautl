@@ -16,3 +16,6 @@ SELECT owner,
                                    AND object_type = 'PACKAGE BODY'))
 and object_type not in ( 'SYNONYM', 'VIEW')
 order by 1,2,3;
+
+
+
