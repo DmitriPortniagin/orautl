@@ -2,8 +2,8 @@ SELECT * FROM v$DATABASE
   SELECT * FROM  table(DBMS_WORKLOAD_REPOSITORY.ash_report_html(
                            l_dbid          => 871185038,
                            l_inst_num      => 1,
-                           l_btime         => to_date('25.11.2013','dd.mm.yyyy'),
-                           l_etime         => to_date('26.11.2013','dd.mm.yyyy'),
+                           l_btime         => to_date('25.11.2017 17:30','dd.mm.yyyy HH24:MI'),
+                           l_etime         => to_date('26.11.2017 17:30','dd.mm.yyyy HH24:MI'),
 /*
                            l_options       IN NUMBER    DEFAULT 0,
                            l_slot_width    IN NUMBER    DEFAULT 0,
