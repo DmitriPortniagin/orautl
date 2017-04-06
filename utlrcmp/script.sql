@@ -1,2 +1,1 @@
-execute utl_recomp.recomp_serial();
-/
+execute sys.utl_recomp.recomp_serial();
